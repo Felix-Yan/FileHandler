@@ -61,15 +61,17 @@ public class Handler {
 				String filepath = fileroot+"/"+filename;
 				grabData(fitnesses, filepath, fitnessWriter, timeWriter, seed);
 			}
-
 			fitnessWriter.close();
 			timeWriter.close();
+			calcAverage(fitnessFile, root+"/summaryFitness.txt",dataset);
+			calcAverage(timeFile, root+"/summaryTime.txt",dataset);
 			calcSD(fitnesses, dataset);
 		}
 	}
 
 	/*
-	 * This grabs the best fitness and overall time from the file. Also writes it to the fitness file.
+	 * This grabs the best fitness and overall time from the given file and writes it to the fitness.txt and time.txt.
+	 * This method does both reading and writing.
 	 */
 	private static void grabData(double[] fitnesses, String filepath, PrintWriter fitnessWriter, PrintWriter timeWriter, int seed){
 		Path path = Paths.get(filepath);
@@ -87,6 +89,27 @@ public class Handler {
 					break;
 				}
 			}
+		} catch (IOException x){
+			System.err.format("IOException: %s%n", x);
+		}
+	}
+
+	/*
+	 * This calculates the average of best fitness and overall time and writes it to summary.txt.
+	 */
+	private static void calcAverage(String dataFile, String summaryFile, int dataset){
+		//String summaryFitness = root+"/summaryFitness.txt";
+		Path dataPath = Paths.get(dataFile);
+		try(BufferedReader reader = Files.newBufferedReader(dataPath)){
+			String line = null;
+			int sum = 0;
+			while((line = reader.readLine()) != null){
+				String[] words = line.split(" ");
+				sum += Double.parseDouble(words[1]);
+			}
+			double mean = sum*1.0/30;
+			PrintWriter allFitness = new PrintWriter(summaryFile, "UTF-8");
+			allFitness.println(dataset+" "+mean);
 		} catch (IOException x){
 			System.err.format("IOException: %s%n", x);
 		}
