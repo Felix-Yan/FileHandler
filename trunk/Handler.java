@@ -8,6 +8,7 @@ import java.io.UnsupportedEncodingException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -21,11 +22,12 @@ public class Handler {
 		String mutationRoot = root+"/Mutation0";
 		String memeticRoot = root+"/Memetic0";
 
-		extract(mutationRoot);
+		extract(mutationRoot,"mutation");
+		extract(memeticRoot,"memetic");
 
-		for(Entry<Integer, Double> e: averageBest.entrySet()){
+		/*for(Entry<Integer, Double> e: averageBest.entrySet()){
 			System.out.println(e.getKey()+","+e.getValue());
-		}
+		}*/
 
 		//System.out.println("===========================");
 
@@ -39,18 +41,28 @@ public class Handler {
 	/*
 	 * This extracts fitness and SD in the given file root.
 	 */
-	private static void extract(String root) throws FileNotFoundException, UnsupportedEncodingException{
+	private static void extract(String mRoot, String type) throws FileNotFoundException, UnsupportedEncodingException{
 		double[] fitnesses = new double[30];
-		crawling(root,fitnesses,801,809);//dataset0801-0808
-		crawling(root,fitnesses,901,906);//dataset0901-0905
+		//Create print writers for the summary files
+		String summaryFitnessFile = root+"/"+type+"Fitness.txt";
+		String summaryTimeFile = root+"/"+type+"Time.txt";
+		PrintWriter allFitness = new PrintWriter(summaryFitnessFile, "UTF-8");
+		PrintWriter allTime = new PrintWriter(summaryTimeFile, "UTF-8");
+
+		crawling(mRoot,fitnesses,801,809,allFitness,allTime);//dataset0801-0808
+		crawling(mRoot,fitnesses,901,906,allFitness,allTime);//dataset0901-0905
+
+		allFitness.close();
+		allTime.close();
 	}
 
 	/*
 	 * This crawls through files of a dataset to help extract fitness and SD.
 	 */
-	private static void crawling(String root, double[] fitnesses, int dataset, int upper) throws FileNotFoundException, UnsupportedEncodingException{
+	private static void crawling(String mRoot, double[] fitnesses, int dataset, int upper, PrintWriter allFitness, PrintWriter allTime) throws FileNotFoundException, UnsupportedEncodingException{
+
 		for(; dataset<upper; dataset++){
-			String fileroot = root+dataset;
+			String fileroot = mRoot+dataset;
 			String fitnessFile = fileroot+"/fitness.txt";
 			String timeFile = fileroot+"/time.txt";
 			PrintWriter fitnessWriter = new PrintWriter(fitnessFile, "UTF-8");
@@ -63,9 +75,10 @@ public class Handler {
 			}
 			fitnessWriter.close();
 			timeWriter.close();
-			calcAverage(fitnessFile, root+"/summaryFitness.txt",dataset);
-			calcAverage(timeFile, root+"/summaryTime.txt",dataset);
-			calcSD(fitnesses, dataset);
+
+			calcStat(fitnessFile, allFitness,dataset);
+			calcStat(timeFile, allTime,dataset);
+			//calcSD(fitnesses, dataset);
 		}
 	}
 
@@ -95,21 +108,27 @@ public class Handler {
 	}
 
 	/*
-	 * This calculates the average of best fitness and overall time and writes it to summary.txt.
+	 * This calculates the average & SD of best fitness and overall time, and writes it to summary texts.
 	 */
-	private static void calcAverage(String dataFile, String summaryFile, int dataset){
-		//String summaryFitness = root+"/summaryFitness.txt";
+	private static void calcStat(String dataFile, PrintWriter writer, int dataset){
 		Path dataPath = Paths.get(dataFile);
 		try(BufferedReader reader = Files.newBufferedReader(dataPath)){
 			String line = null;
-			int sum = 0;
+			double sum = 0;
+			ArrayList<Double> dataEntry = new ArrayList<Double>();
 			while((line = reader.readLine()) != null){
 				String[] words = line.split(" ");
-				sum += Double.parseDouble(words[1]);
+				double data = Double.parseDouble(words[1]);
+				sum += data;
+				dataEntry.add(data);
 			}
 			double mean = sum*1.0/30;
-			PrintWriter allFitness = new PrintWriter(summaryFile, "UTF-8");
-			allFitness.println(dataset+" "+mean);
+			double powersum = 0;
+			for(double d: dataEntry){
+				powersum += Math.pow(d-mean, 2);
+			}
+			double sd = Math.sqrt(powersum/29);
+			writer.println(dataset+" "+mean+" "+sd);
 		} catch (IOException x){
 			System.err.format("IOException: %s%n", x);
 		}
