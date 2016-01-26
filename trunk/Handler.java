@@ -22,7 +22,7 @@ public class Handler {
 		String mutationRoot = root+"/Mutation0";
 		String memeticRoot = root+"/Memetic0";
 
-		extract(mutationRoot,"mutation");
+		//extract(mutationRoot,"mutation");//used for the mutation files
 		extract(memeticRoot,"memetic");
 
 		/*for(Entry<Integer, Double> e: averageBest.entrySet()){
@@ -39,21 +39,30 @@ public class Handler {
 	}
 
 	/*
-	 * This extracts fitness and SD in the given file root.
+	 * This extracts fitness and SD, and nodeOpt, edgeOpt in the given file root.
 	 */
 	private static void extract(String mRoot, String type) throws FileNotFoundException, UnsupportedEncodingException{
 		double[] fitnesses = new double[30];
 		//Create print writers for the summary files
 		String summaryFitnessFile = root+"/"+type+"Fitness.txt";
 		String summaryTimeFile = root+"/"+type+"Time.txt";
+		String summaryNodeFile = root+"/"+type+"nodeOpt.txt";
+		String summaryEdgeFile = root+"/"+type+"edgeOpt.txt";
 		PrintWriter allFitness = new PrintWriter(summaryFitnessFile, "UTF-8");
 		PrintWriter allTime = new PrintWriter(summaryTimeFile, "UTF-8");
+		PrintWriter allNodeOpt = new PrintWriter(summaryNodeFile, "UTF-8");
+		PrintWriter allEdgeOpt = new PrintWriter(summaryEdgeFile, "UTF-8");
 
 		crawling(mRoot,fitnesses,801,809,allFitness,allTime);//dataset0801-0808
 		crawling(mRoot,fitnesses,901,906,allFitness,allTime);//dataset0901-0905
 
+		extractOpt(mRoot,801,809,allNodeOpt,allEdgeOpt);
+		extractOpt(mRoot,901,906,allNodeOpt,allEdgeOpt);
+
 		allFitness.close();
 		allTime.close();
+		allNodeOpt.close();
+		allEdgeOpt.close();
 	}
 
 	/*
@@ -79,6 +88,50 @@ public class Handler {
 			calcStat(fitnessFile, allFitness,dataset);
 			calcStat(timeFile, allTime,dataset);
 			//calcSD(fitnesses, dataset);
+		}
+	}
+
+	/*
+	 * This goes through files of a dataset to extract nodeOpt and edgeOpt
+	 */
+	private static void extractOpt(String mRoot, int dataset, int upper, PrintWriter allNodeOpt, PrintWriter allEdgeOpt) throws FileNotFoundException, UnsupportedEncodingException{
+
+		for(; dataset<upper; dataset++){
+			String fileroot = mRoot+dataset;
+			String nodeOptFile = fileroot+"/nodeOpt.txt";
+			String edgeOptFile = fileroot+"/edgeOpt.txt";
+			PrintWriter nodeOptWriter = new PrintWriter(nodeOptFile, "UTF-8");
+			PrintWriter edgeOptWriter = new PrintWriter(edgeOptFile, "UTF-8");
+
+			for(int seed = 0; seed < 30; seed++){
+				String filename = "out"+seed+".stat";
+				String filepath = fileroot+"/"+filename;
+				writeOpt(filepath, nodeOptWriter, edgeOptWriter, seed);
+			}
+			nodeOptWriter.close();
+			edgeOptWriter.close();
+
+			calcStat(nodeOptFile, allNodeOpt,dataset);
+			calcStat(edgeOptFile, allEdgeOpt,dataset);
+			//calcSD(fitnesses, dataset);
+		}
+	}
+
+	private static void writeOpt( String filepath, PrintWriter nodeOptWriter, PrintWriter edgeOptWriter, int seed){
+		Path path = Paths.get(filepath);
+		try(BufferedReader reader = Files.newBufferedReader(path)){
+			String line = null;
+			while((line = reader.readLine()) != null){
+				String[] words = line.split(" ");
+				if(words[0].equals("nodeOpt")){
+					nodeOptWriter.println(seed+" "+words[1]);
+				}
+				else if(words[0].equals("edgeOpt")){
+					edgeOptWriter.println(seed+" "+words[1]);
+				}
+			}
+		} catch (IOException x){
+			System.err.format("IOException: %s%n", x);
 		}
 	}
 
