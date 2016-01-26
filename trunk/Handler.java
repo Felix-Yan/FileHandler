@@ -22,7 +22,7 @@ public class Handler {
 		String mutationRoot = root+"/Mutation0";
 		String memeticRoot = root+"/Memetic0";
 
-		//extract(mutationRoot,"mutation");//used for the mutation files
+		extract(mutationRoot,"mutation");//used for the mutation files
 		extract(memeticRoot,"memetic");
 
 		/*for(Entry<Integer, Double> e: averageBest.entrySet()){
@@ -46,29 +46,80 @@ public class Handler {
 		//Create print writers for the summary files
 		String summaryFitnessFile = root+"/"+type+"Fitness.txt";
 		String summaryTimeFile = root+"/"+type+"Time.txt";
-		String summaryNodeFile = root+"/"+type+"nodeOpt.txt";
-		String summaryEdgeFile = root+"/"+type+"edgeOpt.txt";
+
 		PrintWriter allFitness = new PrintWriter(summaryFitnessFile, "UTF-8");
 		PrintWriter allTime = new PrintWriter(summaryTimeFile, "UTF-8");
-		PrintWriter allNodeOpt = new PrintWriter(summaryNodeFile, "UTF-8");
-		PrintWriter allEdgeOpt = new PrintWriter(summaryEdgeFile, "UTF-8");
+
 
 		crawling(mRoot,fitnesses,801,809,allFitness,allTime);//dataset0801-0808
 		crawling(mRoot,fitnesses,901,906,allFitness,allTime);//dataset0901-0905
 
+		/*
+		 * This calculates the average node and edge optimizations
+		 */
+		/*String summaryNodeFile = root+"/"+type+"nodeOpt.txt";
+		String summaryEdgeFile = root+"/"+type+"edgeOpt.txt";
+		PrintWriter allNodeOpt = new PrintWriter(summaryNodeFile, "UTF-8");
+		PrintWriter allEdgeOpt = new PrintWriter(summaryEdgeFile, "UTF-8");
 		extractOpt(mRoot,801,809,allNodeOpt,allEdgeOpt);
 		extractOpt(mRoot,901,906,allNodeOpt,allEdgeOpt);
+		allNodeOpt.close();
+		allEdgeOpt.close();*/
+
+		//this calculates the average fitnesses for each generation
+		/*extractGeneration(mRoot,801,809);
+		extractGeneration(mRoot,901,906);*/
 
 		allFitness.close();
 		allTime.close();
-		allNodeOpt.close();
-		allEdgeOpt.close();
+
+	}
+
+	/*
+	 * This goes through files of a dataset to extract generation infos.
+	 */
+	private static void extractGeneration(String mRoot, int dataset, int upper)
+			throws FileNotFoundException, UnsupportedEncodingException {
+
+		for(; dataset<upper; dataset++){
+			String fileroot = mRoot+dataset;
+			double [] generations = new double[51];
+			String generationFile = fileroot+"/generation.txt";
+			PrintWriter generationWriter = new PrintWriter(generationFile, "UTF-8");
+			for(int seed = 0; seed < 30; seed++){
+				String filename = "out"+seed+".stat";
+				String filepath = fileroot+"/"+filename;
+				sumGeneration(generations, filepath);
+			}
+			for(int i=0; i<51; i++){
+				generationWriter.println(i+" "+(generations[i]/30));
+			}
+		}
+	}
+
+	/*
+	 * This sums up the fitnesses of each generation of a file from the given seed filepath
+	 */
+	private static void sumGeneration(double[] generations, String filepath) {
+		Path path = Paths.get(filepath);
+		try(BufferedReader reader = Files.newBufferedReader(path)){
+			String line = null;
+			while((line = reader.readLine()) != null){
+				String[] words = line.split(" ");
+				if(words[0].matches("\\d+")){//determine if the first word is an integer
+					generations[Integer.parseInt(words[0])] += Double.parseDouble(words[5]);
+				}
+			}
+		} catch (IOException x){
+			System.err.format("IOException: %s%n", x);
+		}
 	}
 
 	/*
 	 * This crawls through files of a dataset to help extract fitness and SD.
 	 */
-	private static void crawling(String mRoot, double[] fitnesses, int dataset, int upper, PrintWriter allFitness, PrintWriter allTime) throws FileNotFoundException, UnsupportedEncodingException{
+	private static void crawling(String mRoot, double[] fitnesses, int dataset, int upper,
+			PrintWriter allFitness, PrintWriter allTime) throws FileNotFoundException, UnsupportedEncodingException{
 
 		for(; dataset<upper; dataset++){
 			String fileroot = mRoot+dataset;
