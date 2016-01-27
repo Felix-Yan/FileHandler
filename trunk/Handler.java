@@ -22,7 +22,7 @@ public class Handler {
 		String mutationRoot = root+"/Mutation0";
 		String memeticRoot = root+"/Memetic0";
 
-		extract(mutationRoot,"mutation");//used for the mutation files
+		//extract(mutationRoot,"mutation");//used for the mutation files
 		extract(memeticRoot,"memetic");
 
 		/*for(Entry<Integer, Double> e: averageBest.entrySet()){
@@ -67,8 +67,8 @@ public class Handler {
 		allEdgeOpt.close();*/
 
 		//this calculates the average fitnesses for each generation
-		/*extractGeneration(mRoot,801,809);
-		extractGeneration(mRoot,901,906);*/
+		extractGeneration(mRoot,801,809);
+		extractGeneration(mRoot,901,906);
 
 		allFitness.close();
 		allTime.close();
@@ -94,7 +94,9 @@ public class Handler {
 			for(int i=0; i<51; i++){
 				generationWriter.println(i+" "+(generations[i]/30));
 			}
+			generationWriter.close();
 		}
+
 	}
 
 	/*
